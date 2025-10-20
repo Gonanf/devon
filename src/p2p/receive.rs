@@ -20,6 +20,7 @@ use tokio::{
 };
 use walkdir::WalkDir;
 use crate::cli::commands::*;
+use git2::Repository;
 
 
 pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
@@ -56,7 +57,7 @@ pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
 
     for (name, hash) in collection.iter() {
     let current_path = std::env::current_dir()?;
-            let rel_path = 
+    let rel_path = 
          if let Some(name_path) = path.clone() {
             if !name_path.exists() {create_dir_all(name_path.clone())?}
             println!("exporting to {:?}", name_path);
@@ -66,17 +67,38 @@ pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
         println!("exporting to {:?}", current_path);
         current_path
         };
-        let file_path = rel_path.join(PathBuf::from(name));
-        dbg!(file_path.clone());
-        let mut stream_export = store
-            .export_with_opts(ExportOptions {
-                hash: *hash,
-                mode: ExportMode::Copy,
-                target: file_path,
-            })
-            .await?;
-        dbg!(stream_export);
+    let file_path = rel_path.join(PathBuf::from(name));
+    dbg!(file_path.clone());
+    let mut stream_export = store
+        .export_with_opts(ExportOptions {
+            hash: *hash,
+            mode: ExportMode::Copy,
+            target: file_path,
+        })
+        .await?;
+    dbg!(stream_export);
     }
+    //TODO: Clone path into path
+    let current_path = std::env::current_dir()?;
+    let real_path = 
+         if let Some(name_path) = path.clone() {
+            if !name_path.exists() {create_dir_all(name_path.clone())?}
+            println!("exporting to {:?}", name_path);
+            let mut temp = name_path.into_os_string();
+            temp.push("/");
+            temp.push(first_name.unwrap().0.clone().split("/").next().unwrap());
+            temp
+         }
+        else{
+        println!("exporting to {:?}", current_path);
+        let mut temp = current_path.into_os_string();
+        temp.push("/");
+        temp.push(first_name.unwrap().0.clone().split("/").next().unwrap());
+        temp
+        };
+    println!("REAL PATH: {}",real_path.clone().into_string().unwrap());
+    Repository::clone(real_path.clone().into_string().unwrap().as_str(),"./amongo")?;
+
     remove_dir_all(temp_path).await?;
     Ok(())
 }
