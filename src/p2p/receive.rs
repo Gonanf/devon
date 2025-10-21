@@ -56,18 +56,7 @@ pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
     let first_name = collection.iter().next();
 
     for (name, hash) in collection.iter() {
-    let current_path = std::env::current_dir()?;
-    let rel_path = 
-         if let Some(name_path) = path.clone() {
-            if !name_path.exists() {create_dir_all(name_path.clone())?}
-            println!("exporting to {:?}", name_path);
-            name_path.canonicalize()?
-        }
-        else{
-        println!("exporting to {:?}", current_path);
-        current_path
-        };
-    let file_path = rel_path.join(PathBuf::from(name));
+    let file_path = temp_path.clone().join(PathBuf::from(name));
     dbg!(file_path.clone());
     let mut stream_export = store
         .export_with_opts(ExportOptions {
@@ -83,21 +72,20 @@ pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
     let real_path = 
          if let Some(name_path) = path.clone() {
             if !name_path.exists() {create_dir_all(name_path.clone())?}
-            println!("exporting to {:?}", name_path);
-            let mut temp = name_path.into_os_string();
-            temp.push("/");
-            temp.push(first_name.unwrap().0.clone().split("/").next().unwrap());
-            temp
+            let temp = name_path.join(PathBuf::from(first_name.unwrap().0.clone().split("/").next().unwrap())).clone();
+            println!("exporting to {:?}", temp);
+            let result = temp.into_os_string().into_string().unwrap();
+            result
          }
         else{
         println!("exporting to {:?}", current_path);
-        let mut temp = current_path.into_os_string();
-        temp.push("/");
-        temp.push(first_name.unwrap().0.clone().split("/").next().unwrap());
-        temp
+        let temp = current_path.join(PathBuf::from(first_name.unwrap().0.clone().split("/").next().unwrap()));
+            println!("exporting to {:?}", temp);
+            let result = temp.into_os_string().into_string().unwrap();
+            result
         };
-    println!("REAL PATH: {}",real_path.clone().into_string().unwrap());
-    Repository::clone(real_path.clone().into_string().unwrap().as_str(),"./amongo")?;
+    println!("REAL PATH: {}",real_path.clone());
+    Repository::clone(temp_path.clone().join(PathBuf::from(first_name.unwrap().0.clone().split("/").next().unwrap())).to_str().unwrap(),real_path.clone())?;
 
     remove_dir_all(temp_path).await?;
     Ok(())

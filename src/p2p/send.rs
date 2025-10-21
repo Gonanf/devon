@@ -3,13 +3,11 @@ use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use iroh::{protocol::Router, Endpoint, SecretKey, Watcher};
 use iroh_blobs::{
-    api::{
-        blobs::{self, AddPathOptions, ExportMode, ExportOptions, ImportMode},
-        remote::GetProgressItem,
-        tags::TagInfo, Store,
-    }, format::collection::Collection, get::{self, Stats}, store::{fs::FsStore, mem::MemStore}, ticket::{self, BlobTicket}, BlobFormat, BlobsProtocol, Hash
+    api::
+        blobs::{AddPathOptions, ImportMode}
+    , format::collection::Collection, store::fs::FsStore, ticket::BlobTicket, BlobFormat, BlobsProtocol, Hash
 };
-use n0_future::{BufferedStreamExt, IterExt, StreamExt};
+use n0_future::{BufferedStreamExt, StreamExt};
 use std::{
     ffi::OsString,
     fs::{self, create_dir_all},
@@ -21,7 +19,6 @@ use tokio::{
 };
 use walkdir::WalkDir;
 
-use crate::cli::commands::*;
 
 async fn send_path(path: PathBuf, blobs: BlobsProtocol,store: FsStore, router: Router) -> Result<()> {
     let archivos = WalkDir::new(path.canonicalize()?.clone())
