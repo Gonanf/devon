@@ -1,16 +1,6 @@
-use std::{
-    ffi::OsString,
-    fs::{self, create_dir_all},
-    path::{self, Path, PathBuf},
-};
+use std::path::PathBuf;
 use clap::{Parser, Subcommand};
-use iroh_blobs::{
-    api::{
-        blobs::{self, AddPathOptions, ExportMode, ExportOptions, ImportMode},
-        remote::GetProgressItem,
-        tags::TagInfo, Store,
-    }, format::collection::Collection, get::{self, Stats}, store::{fs::FsStore, mem::MemStore}, ticket::{self, BlobTicket}, BlobFormat, BlobsProtocol, Hash
-};
+use iroh_blobs::ticket::BlobTicket;
 
 #[derive(Parser)]
 #[command(version, about)]

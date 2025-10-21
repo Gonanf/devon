@@ -1,25 +1,14 @@
-use anyhow::{Context, Ok, Result};
-use clap::Parser;
-use iroh::{protocol::Router, Endpoint, SecretKey, Watcher};
+use anyhow::{Ok, Result};
+use iroh::{Endpoint, SecretKey};
 use iroh_blobs::{
-    api::{
-        blobs::{self, AddPathOptions, ExportMode, ExportOptions, ImportMode},
-        remote::GetProgressItem,
-        tags::TagInfo, Store,
-    }, format::collection::Collection, get::{self, Stats}, store::{fs::FsStore, mem::MemStore}, ticket::{self, BlobTicket}, BlobFormat, BlobsProtocol, Hash
+    api::blobs::{ExportMode, ExportOptions}, format::collection::Collection, store::fs::FsStore, ticket::BlobTicket
 };
-use n0_future::{BufferedStreamExt, IterExt, StreamExt};
+use n0_future::StreamExt;
 use std::{
-    ffi::OsString,
-    fs::{self, create_dir_all},
-    path::{self, Path, PathBuf},
+    fs::create_dir_all,
+    path::PathBuf,
 };
-use tokio::{
-    fs::{create_dir, remove_dir_all},
-    sync::mpsc,
-};
-use walkdir::WalkDir;
-use crate::cli::commands::*;
+use tokio::fs::remove_dir_all;
 use git2::Repository;
 
 
@@ -58,7 +47,7 @@ pub async fn receive(path: Option<PathBuf>, ticket: BlobTicket) -> Result<()> {
     for (name, hash) in collection.iter() {
     let file_path = temp_path.clone().join(PathBuf::from(name));
     dbg!(file_path.clone());
-    let mut stream_export = store
+    let stream_export = store
         .export_with_opts(ExportOptions {
             hash: *hash,
             mode: ExportMode::Copy,

@@ -1,4 +1,4 @@
-use anyhow::{Context, Ok, Result};
+use anyhow::{Ok, Result};
 use clap::Parser;
 
 mod cli;

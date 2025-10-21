@@ -1,6 +1,5 @@
 
-use anyhow::{Context, Ok, Result};
-use clap::Parser;
+use anyhow::{Ok, Result};
 use iroh::{protocol::Router, Endpoint, SecretKey, Watcher};
 use iroh_blobs::{
     api::
@@ -10,13 +9,9 @@ use iroh_blobs::{
 use n0_future::{BufferedStreamExt, StreamExt};
 use std::{
     ffi::OsString,
-    fs::{self, create_dir_all},
-    path::{self, Path, PathBuf},
+    path::PathBuf,
 };
-use tokio::{
-    fs::{create_dir, remove_dir_all},
-    sync::mpsc,
-};
+use tokio::fs::remove_dir_all;
 use walkdir::WalkDir;
 
 
@@ -25,15 +20,23 @@ async fn send_path(path: PathBuf, blobs: BlobsProtocol,store: FsStore, router: R
         .into_iter()
         .filter_map(|f| {
             let f = f.ok()?;
-            dbg!(f.clone());
+            //dbg!(f.clone());
+
+
 
             if !f.file_type().is_file() {
                 return None;
             }
+            if f.path().iter().find(|x| *x == ".git").is_none() {
+                //println!("NOT .git {:?}",f.file_name().to_str());
+                return None;
+            }
+            println!(" .git {:?}",f.file_name().to_str());
+
             let name = f.clone().into_path().strip_prefix(path.canonicalize().unwrap().parent()?).unwrap().as_os_str().to_owned();
             let ph = f.clone().into_path();
 
-            println!("{:?} {:?}", name, ph);
+            //println!("{:?} {:?}", name, ph);
 
             Some((name, ph))
         })
@@ -56,7 +59,6 @@ async fn send_path(path: PathBuf, blobs: BlobsProtocol,store: FsStore, router: R
         .await;
 
     let coleccion = Collection::from_iter(res);
-    dbg!();
     let tag = coleccion.clone().store(&store).await?;
     let addr = router.endpoint().node_addr().initialized().await;
     let ticket = BlobTicket::new(addr, *tag.hash(), BlobFormat::HashSeq);
@@ -75,7 +77,7 @@ pub async fn send(path: Option<PathBuf>, database: Option<PathBuf>) -> Result<()
         Some(ref a) => a.canonicalize()?,
         None => std::env::current_dir()?.join(PathBuf::from(format!(
             ".temp_sender_{:?}",
-            if let Some(p) = path.clone() {p.file_name().unwrap().to_os_string()}else{OsString::from("default")}
+            if let Some(p) = path.clone() {p.canonicalize()?.file_name().unwrap().to_os_string()}else{OsString::from("default")}
         ))),
     };
 
